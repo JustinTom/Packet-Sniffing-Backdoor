@@ -191,6 +191,6 @@ if __name__ == "__main__":
 		else:
 			#Sniff for the output result of the command from the server
 			#Ensure a stop filter when the correct packet is received.
-			dstPort = str(destPort)
+			dstPort = str(args.destPort)
 			sniff(filter="tcp and dstPort " + dstPort, prn=getOutput, stop_filter=packetCheck)
 			sendFlag = True
