@@ -190,7 +190,6 @@ if __name__ == "__main__":
 			packet = packetCraft(args.destIP, args.sourPort, args.destPort, secureData)
 			#Send the packet with no verbose
 			send(packet, verbose=0)
-			packet.show()
 			sendFlag = False
 		#After the command is inputted, sniff for the output result.
 		else:
