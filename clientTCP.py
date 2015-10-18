@@ -29,7 +29,7 @@ import argparse
 
 #Set command line arguments for the program.
 cmdParser = argparse.ArgumentParser(description="Client Backdoor Program")
-cmdParser.add_argument('-d',
+cmdParser.add_argument('-i',
 					'--dstIP',
 					dest='destIP',
 					help='Destination IP address of the host to send the command to.',

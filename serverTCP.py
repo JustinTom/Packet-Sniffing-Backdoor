@@ -118,6 +118,8 @@ def getCommand(packet):
             stdout, stderr = process.communicate()
             #Concatenate the shell output to a variable prepped to send back to client.
             data = stdout + stderr
+            if data.strip() == "":
+                data = "No output generated from command: " + command
             #Encrypt the shell output.
             encryptedOutput = encryptData(data)
             #Craft a packet with the encrypted output data and send back to client.
