@@ -23,7 +23,8 @@
 
 #!/usr/bin/python
 from scapy.all import *
-#import logging
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 import subprocess
 import setproctitle
 import argparse
